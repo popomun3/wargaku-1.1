@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wargaku - Sistem Informasi & Data Penduduk</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
+        .glass-header {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(8px);
+        }
+    </style>
+</head>
+<body class="text-slate-800 antialiased min-h-screen flex flex-col">
+
+    <!-- Header Navigation -->
+    <header class="glass-header sticky top-0 z-30 border-b border-slate-200 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center gap-3">
+                    <div class="bg-indigo-600 text-white p-2 rounded-xl shadow-md">
+                        <i data-lucide="users" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-bold text-slate-900 leading-none">Wargaku</h1>
+                        <span class="text-xs text-slate-500 font-medium">Sistem Pendataan Warga RT/RW</span>
+                    </div>
+                </div>
+                
+                <!-- Action Buttons -->
+                <div class="flex items-center gap-2 sm:gap-3">
+                    <button onclick="openExportModal()" class="flex items-center gap-2 px-3 py-2 text-xs sm:text-sm font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition">
+                        <i data-lucide="download" class="w-4 h-4"></i>
+                        <span class="hidden sm:inline">Ekspor / Impor</span>
+                    </button>
+                    <button onclick="openModal()" class="flex items-center gap-2 px-4 py-2 text-xs sm:text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-sm transition">
+                        <i data-lucide="user-plus" class="w-4 h-4"></i>
+                        <span>Tambah Warga</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+        
+        <!-- Summary Cards Grid -->
+        <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <!-- Card 1: Total Penduduk -->
+            <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Penduduk</p>
+                    <h3 id="statTotal" class="text-2xl font-bold text-slate-900 mt-1">0</h3>
+                </div>
+                <div class="p-3 bg-indigo-50 text-indigo-600 rounded-xl">
+                    <i data-lucide="users" class="w-6 h-6"></i>
+                </div>
+            </div>
+
+            <!-- Card 2: Laki-laki -->
+            <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Laki-Laki</p>
+                    <h3 id="statMale" class="text-2xl font-bold text-blue-600 mt-1">0</h3>
+                </div>
+                <div class="p-3 bg-blue-50 text-blue-600 rounded-xl">
+                    <i data-lucide="user-check" class="w-6 h-6"></i>
+                </div>
+            </div>
+
+            <!-- Card 3: Perempuan -->
+            <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Perempuan</p>
+                    <h3 id="statFemale" class="text-2xl font-bold text-pink-600 mt-1">0</h3>
+                </div>
+                <div class="p-3 bg-pink-50 text-pink-600 rounded-xl">
+                    <i data-lucide="user-heart" class="w-6 h-6"></i>
+                </div>
+            </div>
+
+            <!-- Card 4: Total KK -->
+            <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Kepala Keluarga</p>
+                    <h3 id="statKK" class="text-2xl font-bold text-emerald-600 mt-1">0</h3>
+                </div>
+                <div class="p-3 bg-emerald-50 text-emerald-600 rounded-xl">
+                    <i data-lucide="home" class="w-6 h-6"></i>
+                </div>
+            </div>
+        </section>
+
+        <!-- Charts Section -->
+        <section class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm">
+                <h2 class="text-base font-bold text-slate-800 mb-4 flex items-center gap-2">
+                    <i data-lucide="pie-chart" class="w-5 h-5 text-indigo-600"></i>
+                    Demografi Jenis Kelamin
+                </h2>
+                <div class="relative h-60 flex justify-center">
+                    <canvas id="genderChart"></canvas>
+                </div>
+            </div>
+            <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm">
+                <h2 class="text-base font-bold text-slate-800 mb-4 flex items-center gap-2">
+                    <i data-lucide="bar-chart-3" class="w-5 h-5 text-indigo-600"></i>
+                    Distribusi Usia
+                </h2>
+                <div class="relative h-60">
+                    <canvas id="ageChart"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <!-- Data Table Section -->
+        <section class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+            <!-- Table Controls -->
+            <div class="p-5 border-b border-slate-100 flex flex-col md:flex-row gap-4 items-center justify-between">
+                <!-- Search Input -->
+                <div class="relative w-full md:w-80">
+                    <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                    <input type="text" id="searchInput" oninput="filterData()" placeholder="Cari NIK, Nama, atau No KK..." class="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition">
+                </div>
+
+                <!-- Filter Options -->
+                <div class="flex flex-wrap items-center gap-3 w-full md:w-auto">
+                    <select id="filterRT" onchange="filterData()" class="bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-xl p-2.5 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 outline-none">
+                        <option value="">Semua RT</option>
+                        <option value="001">RT 001</option>
+                        <option value="002">RT 002</option>
+                        <option value="003">RT 003</option>
+                        <option value="004">RT 004</option>
+                    </select>
+
+                    <select id="filterGender" onchange="filterData()" class="bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-xl p-2.5 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 outline-none">
+                        <option value="">Semua Gender</option>
+                        <option value="Laki-Laki">Laki-Laki</option>
+                        <option value="Perempuan">Perempuan</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Table Container -->
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm text-slate-600">
+                    <thead class="bg-slate-50/70 text-slate-700 font-semibold uppercase text-[11px] tracking-wider border-b border-slate-100">
+                        <tr>
+                            <th class="py-3.5 px-4">Warga</th>
+                            <th class="py-3.5 px-4">NIK / No KK</th>
+                            <th class="py-3.5 px-4">L/P</th>
+                            <th class="py-3.5 px-4">Usia</th>
+                            <th class="py-3.5 px-4">RT / RW</th>
+                            <th class="py-3.5 px-4">Status Hub.</th>
+                            <th class="py-3.5 px-4 text-center">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="residentTableBody" class="divide-y divide-slate-100">
+                        <!-- Dynamic Rows loaded via JS -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Empty State -->
+            <div id="emptyState" class="hidden p-12 text-center">
+                <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto text-slate-400 mb-3">
+                    <i data-lucide="inbox" class="w-8 h-8"></i>
+                </div>
+                <h3 class="text-base font-semibold text-slate-800">Tidak ada data ditemukan</h3>
+                <p class="text-sm text-slate-500 mt-1">Coba sesuaikan pencarian atau tambahkan data warga baru.</p>
+            </div>
+        </section>
+    </main>
+
+    <!-- Form Modal (Tambah / Edit) -->
+    <div id="residentModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center hidden opacity-0 transition-opacity duration-200">
+        <div class="bg-white rounded-2xl shadow-xl border border-slate-100 w-full max-w-xl mx-4 overflow-hidden transform scale-95 transition-transform duration-200" id="modalCard">
+            <!-- Modal Header -->
+            <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+                <h3 id="modalTitle" class="text-base font-bold text-slate-800">Tambah Data Warga</h3>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600 rounded-lg p-1 transition">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <!-- Form Content -->
+            <form id="residentForm" onsubmit="saveResident(event)" class="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
+                <input type="hidden" id="editIndex" value="-1">
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">NIK (16 Digit) *</label>
+                        <input type="text" id="nik" required maxlength="16" pattern="[0-9]{16}" placeholder="3201..." class="w-full px-3.5 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Nomor KK *</label>
+                        <input type="text" id="noKk" required maxlength="16" pattern="[0-9]{16}" placeholder="3201..." class="w-full px-3.5 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 outline-none">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Nama Lengkap *</label>
+                    <input type="text" id="nama" required placeholder="Contoh: Ahmad Subagja" class="w-full px-3.5 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 outline-none">
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Jenis Kelamin *</label>
+                        <select id="gender" required class="w-full px-3.5 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 outline-none">
+                            <option value="Laki-Laki">Laki-Laki</option>
+                            <option value="Perempuan">Perempuan</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Tanggal Lahir *</label>
+                        <input type="date" id="birthDate" required class="w-full px-3.5 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 outline-none">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-3 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">RT *</label>
+                        <select id="rt" required class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 outline-none">
+                            <option value="001">001</option>
+                            <option value="002">002</option>
+                            <option value="003">003</option>
+                            <option value="004">004</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">RW *</label>
+                        <input type="text" id="rw" value="005" required readonly class="w-full px-3 py-2 text-sm bg-slate-100 border border-slate-200 text-slate-500 rounded-xl outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Agama</label>
+                        <select id="agama" class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 outline-none">
+                            <option value="Islam">Islam</option>
+                            <option value="Kristen">Kristen</option>
+                            <option value="Katolik">Katolik</option>
+                            <option value="Hindu">Hindu</option>
+                            <option value="Buddha">Buddha</option>
+                            <option value="Konghucu">Konghucu</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Status Hubungan Keluarga</label>
+                        <select id="statusHub" class="w-full px-3.5 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 outline-none">
+                            <option value="Kepala Keluarga">Kepala Keluarga</option>
+                            <option value="Istri">Istri</option>
+                            <option value="Anak">Anak</option>
+                            <option value="Lainnya">Lainnya</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Pekerjaan</label>
+                        <input type="text" id="pekerjaan" placeholder="Contoh: Karyawan Swasta" class="w-full px-3.5 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 outline-none">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Alamat Lengkap</label>
+                    <textarea id="alamat" rows="2" placeholder="Jl. Mawar No. 12..." class="w-full px-3.5 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 outline-none"></textarea>
+                </div>
+
+                <!-- Form Buttons -->
+                <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
+                    <button type="button" onclick="closeModal()" class="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition">Batal</button>
+                    <button type="submit" class="px-5 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-md transition">Simpan Data</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Export/Import Modal -->
+    <div id="exportModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center hidden opacity-0 transition-opacity duration-200">
+        <div class="bg-white rounded-2xl shadow-xl border border-slate-100 w-full max-w-md mx-4 p-6 space-y-5">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h3 class="text-base font-bold text-slate-800">Ekspor & Impor Data</h3>
+                <button onclick="closeExportModal()" class="text-slate-400 hover:text-slate-600">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <div class="space-y-3">
+                <p class="text-xs text-slate-500">Unduh data warga untuk disimpan sebagai file JSON/CSV atau impor file cadangan.</p>
+                <div class="grid grid-cols-2 gap-3">
+                    <button onclick="exportJSON()" class="flex flex-col items-center justify-center p-4 border border-slate-200 hover:border-indigo-600 hover:bg-indigo-50/50 rounded-xl transition text-center group">
+                        <i data-lucide="file-json" class="w-7 h-7 text-indigo-600 mb-2"></i>
+                        <span class="text-xs font-semibold text-slate-700">Ekspor JSON</span>
+                    </button>
+                    <button onclick="exportCSV()" class="flex flex-col items-center justify-center p-4 border border-slate-200 hover:border-emerald-600 hover:bg-emerald-50/50 rounded-xl transition text-center group">
+                        <i data-lucide="file-spreadsheet" class="w-7 h-7 text-emerald-600 mb-2"></i>
+                        <span class="text-xs font-semibold text-slate-700">Ekspor CSV</span>
+                    </button>
+                </div>
+
+                <div class="pt-3 border-t border-slate-100">
+                    <label class="block text-xs font-semibold text-slate-700 mb-2">Impor Data dari File JSON</label>
+                    <input type="file" id="importFile" accept=".json" onchange="importJSON(event)" class="block w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="fixed bottom-5 right-5 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-lg flex items-center gap-3 transform translate-y-20 opacity-0 transition-all duration-300 z-50">
+        <i data-lucide="check-circle-2" class="w-5 h-5 text-emerald-400"></i>
+        <span id="toastMsg" class="text-xs font-medium">Pesan notifikasi</span>
+    </div>
+
+    <!-- Application Logic Script -->
+    <script>
+        // Sample initial data
+        const initialResidents = [
+            {
+                nik: "3201011508850001",
+                noKk: "3201010101180001",
+                nama: "Budi Santoso",
+                gender: "Laki-Laki",
+                birthDate: "1985-08-15",
+                rt: "001",
+                rw: "005",
+                agama: "Islam",
+                statusHub: "Kepala Keluarga",
+                pekerjaan: "Wiraswasta",
+                alamat: "Jl. Merdeka No. 10"
+            },
+            {
+                nik: "3201015210880002",
+                noKk: "3201010101180001",
+                nama: "Siti Rahmawati",
+                gender: "Perempuan",
+                birthDate: "1988-10-12",
+                rt: "001",
+                rw: "005",
+                agama: "Islam",
+                statusHub: "Istri",
+                pekerjaan: "Guru",
+                alamat: "Jl. Merdeka No. 10"
+            },
+            {
+                nik: "3201012005100003",
+                noKk: "3201010101180002",
+                nama: "Ahmad Rizky",
+                gender: "Laki-Laki",
+                birthDate: "2010-05-20",
+                rt: "002",
+                rw: "005",
+                agama: "Islam",
+                statusHub: "Anak",
+                pekerjaan: "Pelajar",
+                alamat: "Jl. Mawar No. 4"
+            }
+        ];
+
+        let residents = [];
+        let genderChartInstance = null;
+        let ageChartInstance = null;
+
+        // Initialize Application
+        window.onload = function() {
+            lucide.createIcons();
+            loadResidentsData();
+            initCharts();
+            renderTable();
+            updateStats();
+        };
+
+        // Load residents from LocalStorage
+        function loadResidentsData() {
+            const stored = localStorage.getItem('wargaku_data');
+            if (stored) {
+                try {
+                    residents = JSON.parse(stored);
+                } catch(e) {
+                    residents = [...initialResidents];
+                }
+            } else {
+                residents = [...initialResidents];
+                saveToStorage();
+            }
+        }
+
+        // Save residents to LocalStorage
+        function saveToStorage() {
+            localStorage.setItem('wargaku_data', JSON.stringify(residents));
+        }
+
+        // Calculate Age
+        function calculateAge(birthDateStr) {
+            if (!birthDateStr) return 0;
+            const birthDate = new Date(birthDateStr);
+            const today = new Date();
+            let age = today.getFullYear() - birthDate.getFullYear();
+            const monthDiff = today.getMonth() - birthDate.getMonth();
+            if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+                age--;
+            }
+            return age || 0;
+        }
+
+        // Render Table Data
+        function renderTable(dataToRender = residents) {
+            const tbody = document.getElementById('residentTableBody');
+            const emptyState = document.getElementById('emptyState');
+            tbody.innerHTML = '';
+
+            if (dataToRender.length === 0) {
+                emptyState.classList.remove('hidden');
+                return;
+            } else {
+                emptyState.classList.add('hidden');
+            }
+
+            dataToRender.forEach((resident, index) => {
+                const originalIndex = residents.indexOf(resident);
+                const age = calculateAge(resident.birthDate);
+                const genderBadge = resident.gender === 'Laki-Laki' 
+                    ? '<span class="px-2 py-0.5 text-[11px] font-semibold bg-blue-50 text-blue-600 rounded-md">L</span>'
+                    : '<span class="px-2 py-0.5 text-[11px] font-semibold bg-pink-50 text-pink-600 rounded-md">P</span>';
+
+                const row = document.createElement('tr');
+                row.className = 'hover:bg-slate-50/80 transition';
+                row.innerHTML = `
+                    <td class="py-3.5 px-4 font-medium text-slate-900">
+                        <div>${escapeHtml(resident.nama)}</div>
+                        <div class="text-[11px] text-slate-400 font-normal">${escapeHtml(resident.pekerjaan || '-')}</div>
+                    </td>
+                    <td class="py-3.5 px-4">
+                        <div class="text-xs font-mono text-slate-700">${escapeHtml(resident.nik)}</div>
+                        <div class="text-[11px] font-mono text-slate-400">KK: ${escapeHtml(resident.noKk)}</div>
+                    </td>
+                    <td class="py-3.5 px-4">${genderBadge}</td>
+                    <td class="py-3.5 px-4 text-xs">${age} Thn</td>
+                    <td class="py-3.5 px-4 text-xs">RT ${escapeHtml(resident.rt)} / RW ${escapeHtml(resident.rw)}</td>
+                    <td class="py-3.5 px-4 text-xs">${escapeHtml(resident.statusHub)}</td>
+                    <td class="py-3.5 px-4 text-center">
+                        <div class="flex items-center justify-center gap-1">
+                            <button onclick="editResident(${originalIndex})" class="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition" title="Edit">
+                                <i data-lucide="edit-3" class="w-4 h-4"></i>
+                            </button>
+                            <button onclick="deleteResident(${originalIndex})" class="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition" title="Hapus">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            lucide.createIcons();
+        }
+
+        // Filter and Search Logic
+        function filterData() {
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            const filterRT = document.getElementById('filterRT').value;
+            const filterGender = document.getElementById('filterGender').value;
+
+            const filtered = residents.filter(r => {
+                const matchesSearch = r.nama.toLowerCase().includes(query) ||
+                                      r.nik.includes(query) ||
+                                      r.noKk.includes(query);
+                const matchesRT = filterRT === '' || r.rt === filterRT;
+                const matchesGender = filterGender === '' || r.gender === filterGender;
+
+                return matchesSearch && matchesRT && matchesGender;
+            });
+
+            renderTable(filtered);
+        }
+
+        // Update Dashboard Statistics
+        function updateStats() {
+            const total = residents.length;
+            const males = residents.filter(r => r.gender === 'Laki-Laki').length;
+            const females = residents.filter(r => r.gender === 'Perempuan').length;
+            const kk = residents.filter(r => r.statusHub === 'Kepala Keluarga').length;
+
+            document.getElementById('statTotal').innerText = total;
+            document.getElementById('statMale').innerText = males;
+            document.getElementById('statFemale').innerText = females;
+            document.getElementById('statKK').innerText = kk;
+
+            updateCharts(males, females);
+        }
+
+        function initCharts() {
+            // Gender Chart
+            const ctxGender = document.getElementById('genderChart').getContext('2d');
+            genderChartInstance = new Chart(ctxGender, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Laki-Laki', 'Perempuan'],
+                    datasets: [{
+                        data: [0, 0],
+                        backgroundColor: ['#3b82f6', '#ec4899'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom' }
+                    }
+                }
+            });
+
+            // Age Chart
+            const ctxAge = document.getElementById('ageChart').getContext('2d');
+            ageChartInstance = new Chart(ctxAge, {
+                type: 'bar',
+                data: {
+                    labels: ['0-12 (Anak)', '13-17 (Remaja)', '18-59 (Dewasa)', '60+ (Lansia)'],
+                    datasets: [{
+                        label: 'Jumlah Warga',
+                        data: [0, 0, 0, 0],
+                        backgroundColor: '#6366f1',
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true, ticks: { stepSize: 1 } }
+                    },
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
+        }
+
+        function updateCharts(males, females) {
+            if (!genderChartInstance || !ageChartInstance) return;
+
+            // Gender Update
+            genderChartInstance.data.datasets[0].data = [males, females];
+            genderChartInstance.update();
+
+            // Age Grouping
+            let anak = 0, remaja = 0, dewasa = 0, lansia = 0;
+            residents.forEach(r => {
+                const age = calculateAge(r.birthDate);
+                if (age <= 12) anak++;
+                else if (age <= 17) remaja++;
+                else if (age <= 59) dewasa++;
+                else lansia++;
+            });
+
+            ageChartInstance.data.datasets[0].data = [anak, remaja, dewasa, lansia];
+            ageChartInstance.update();
+        }
+
+        // Modal Handlers
+        function openModal() {
+            document.getElementById('editIndex').value = "-1";
+            document.getElementById('residentForm').reset();
+            document.getElementById('modalTitle').innerText = "Tambah Data Warga";
+            
+            const modal = document.getElementById('residentModal');
+            const card = document.getElementById('modalCard');
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                card.classList.remove('scale-95');
+            }, 10);
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('residentModal');
+            const card = document.getElementById('modalCard');
+            modal.classList.add('opacity-0');
+            card.classList.add('scale-95');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 200);
+        }
+
+        function openExportModal() {
+            const modal = document.getElementById('exportModal');
+            modal.classList.remove('hidden');
+            setTimeout(() => modal.classList.remove('opacity-0'), 10);
+        }
+
+        function closeExportModal() {
+            const modal = document.getElementById('exportModal');
+            modal.classList.add('opacity-0');
+            setTimeout(() => modal.classList.add('hidden'), 200);
+        }
+
+        // Save Resident (Create or Edit)
+        function saveResident(event) {
+            event.preventDefault();
+            const editIdx = parseInt(document.getElementById('editIndex').value);
+
+            const newResident = {
+                nik: document.getElementById('nik').value.trim(),
+                noKk: document.getElementById('noKk').value.trim(),
+                nama: document.getElementById('nama').value.trim(),
+                gender: document.getElementById('gender').value,
+                birthDate: document.getElementById('birthDate').value,
+                rt: document.getElementById('rt').value,
+                rw: document.getElementById('rw').value,
+                agama: document.getElementById('agama').value,
+                statusHub: document.getElementById('statusHub').value,
+                pekerjaan: document.getElementById('pekerjaan').value.trim(),
+                alamat: document.getElementById('alamat').value.trim()
+            };
+
+            // Validation for unique NIK
+            const existingNIK = residents.findIndex((r, idx) => r.nik === newResident.nik && idx !== editIdx);
+            if (existingNIK !== -1) {
+                showToast("NIK sudah terdaftar!");
+                return;
+            }
+
+            if (editIdx >= 0) {
+                residents[editIdx] = newResident;
+                showToast("Data warga berhasil diperbarui!");
+            } else {
+                residents.push(newResident);
+                showToast("Warga baru berhasil ditambahkan!");
+            }
+
+            saveToStorage();
+            filterData();
+            updateStats();
+            closeModal();
+        }
+
+        // Edit Resident
+        function editResident(index) {
+            const r = residents[index];
+            document.getElementById('editIndex').value = index;
+            document.getElementById('nik').value = r.nik;
+            document.getElementById('noKk').value = r.noKk;
+            document.getElementById('nama').value = r.nama;
+            document.getElementById('gender').value = r.gender;
+            document.getElementById('birthDate').value = r.birthDate;
+            document.getElementById('rt').value = r.rt;
+            document.getElementById('rw').value = r.rw;
+            document.getElementById('agama').value = r.agama;
+            document.getElementById('statusHub').value = r.statusHub;
+            document.getElementById('pekerjaan').value = r.pekerjaan || '';
+            document.getElementById('alamat').value = r.alamat || '';
+
+            document.getElementById('modalTitle').innerText = "Edit Data Warga";
+
+            const modal = document.getElementById('residentModal');
+            const card = document.getElementById('modalCard');
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                card.classList.remove('scale-95');
+            }, 10);
+        }
+
+        // Delete Resident
+        function deleteResident(index) {
+            if (confirm(`Apakah Anda yakin ingin menghapus data warga ${residents[index].nama}?`)) {
+                residents.splice(index, 1);
+                saveToStorage();
+                filterData();
+                updateStats();
+                showToast("Data warga berhasil dihapus");
+            }
+        }
+
+        // Export Data to JSON File
+        function exportJSON() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(residents, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", `Data_Wargaku_${new Date().toISOString().slice(0,10)}.json`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+            showToast("Berhasil mengekspor file JSON");
+        }
+
+        // Export Data to CSV File
+        function exportCSV() {
+            if (residents.length === 0) {
+                showToast("Tidak ada data untuk diekspor");
+                return;
+            }
+            const headers = ["NIK", "No KK", "Nama", "Jenis Kelamin", "Tanggal Lahir", "RT", "RW", "Agama", "Status Hubungan", "Pekerjaan", "Alamat"];
+            const rows = residents.map(r => [
+                `"${r.nik}"`,
+                `"${r.noKk}"`,
+                `"${r.nama}"`,
+                `"${r.gender}"`,
+                `"${r.birthDate}"`,
+                `"${r.rt}"`,
+                `"${r.rw}"`,
+                `"${r.agama}"`,
+                `"${r.statusHub}"`,
+                `"${r.pekerjaan || ''}"`,
+                `"${r.alamat || ''}"`
+            ]);
+
+            const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", csvContent);
+            downloadAnchor.setAttribute("download", `Data_Wargaku_${new Date().toISOString().slice(0,10)}.csv`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+            showToast("Berhasil mengekspor file CSV");
+        }
+
+        // Import JSON File
+        function importJSON(event) {
+            const fileReader = new FileReader();
+            fileReader.onload = function(e) {
+                try {
+                    const importedData = JSON.parse(e.target.result);
+                    if (Array.isArray(importedData)) {
+                        residents = importedData;
+                        saveToStorage();
+                        filterData();
+                        updateStats();
+                        closeExportModal();
+                        showToast("Data warga berhasil diimpor!");
+                    } else {
+                        showToast("Format JSON tidak valid!");
+                    }
+                } catch(err) {
+                    showToast("Gagal membaca file JSON!");
+                }
+            };
+            if (event.target.files[0]) {
+                fileReader.readAsText(event.target.files[0]);
+            }
+        }
+
+        // Helpers
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toastMsg').innerText = message;
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+    </script>
+</body>
+</html>
